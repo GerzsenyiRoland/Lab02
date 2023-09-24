@@ -17,8 +17,8 @@ namespace TurkMite
             Cv2.WaitKey();
 
         }
-        class TurkMite 
-        { 
+        class TurkMite
+        {
             public Mat Image { get; }
             private int x;
             private int y;
@@ -38,23 +38,26 @@ namespace TurkMite
 
             public void Step()
             {
-                Vec3b currentColor = indexer[y, x];
+                indexer[y, x] = GetNextColorAndUpdateDirection(indexer[y, x]);
+                PerformMove();
+            }
+
+            private Vec3b GetNextColorAndUpdateDirection(Vec3b currentColor)
+            {
                 if (currentColor == black)
                 {
-                    indexer[y, x] =white;
                     direction++;
-                    if (direction > 3)
-                        direction = 0;
+                    return white;
                 }
                 else
                 {
-                    indexer[y, x] = black;
                     direction--;
-                    if (direction < 0)
-                        direction = 3;
+                    return black;
                 }
-
-                direction = (direction+4) % 4;
+            }
+            private void PerformMove()
+            {
+                direction = (direction + 4) % 4;
                 var delta = new (int x, int y)[] { (0, -1), (1, 0), (0, 1), (-1, 0) };
                 x += delta[direction].x;
                 y += delta[direction].y;
