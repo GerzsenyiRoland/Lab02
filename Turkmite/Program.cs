@@ -8,13 +8,21 @@ namespace TurkMite
     {
         static void Main(string[] args)
         {
-            Mat img = new Mat(200, 200, MatType.CV_8UC3, new Scalar(0, 0, 0));
-            var turkmite = new OriginalTurkmite(img);
-            for (int i = 0; i < 13000; i++)
+            Mat img1 = new Mat(200, 200, MatType.CV_8UC3, new Scalar(0, 0, 0));
+            Mat img2 = new Mat(200, 200, MatType.CV_8UC3, new Scalar(0, 0, 0));
+            var turkmite = new OriginalTurkmite(img1);
+            for (int i = 0; i < turkmite.PerferredIterationCount; i++)
             {
                 turkmite.Step();
             }
-            Cv2.ImShow("TurkMite", img);
+            var turkmit = new ThreeColorTurkmite(img2);
+            for (int i = 0; i<turkmit.PerferredIterationCount; i++)
+            {
+                turkmit.Step();
+            }
+
+            Cv2.ImShow("TurkMite1", img1);
+            Cv2.ImShow("TurkMite2", img2);
             Cv2.WaitKey();
 
         }
@@ -26,9 +34,31 @@ namespace TurkMite
 
             public OriginalTurkmite(Mat image) : base(image) { }
 
+            public override int PerferredIterationCount => 13000;
+
             protected override (Vec3b newColor, int deltaDirection) GetNextColorAndUpdateDirection(Vec3b currentColor)
             {
                 return (currentColor == black) ? (white,1) : (black,-1);
+            }
+        }
+
+        class ThreeColorTurkmite : TurkmiteBase
+        {
+            readonly private Vec3b black = new Vec3b(0,0,0);
+            readonly private Vec3b white = new Vec3b(255,255,255);
+            readonly private Vec3b red = new Vec3b(0,0,255);
+
+            public ThreeColorTurkmite(Mat image):base(image) { }
+
+            public override int PerferredIterationCount => 13000;
+
+            protected override (Vec3b newColor, int deltaDirection) GetNextColorAndUpdateDirection(Vec3b currentColor)
+            {
+                if (currentColor == black)
+                    return (white, 1);
+                else if (currentColor == white)
+                    return (red, -1);
+                else return (black, -1);
             }
         }
 
@@ -58,6 +88,7 @@ namespace TurkMite
                 PerformMove(deltaDirection);
             }
 
+            public abstract int PerferredIterationCount { get; }
             protected abstract (Vec3b newColor, int deltaDirection) GetNextColorAndUpdateDirection(Vec3b currentColor);
             private void PerformMove(int deltaDirection)
             {
