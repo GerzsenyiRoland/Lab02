@@ -1,4 +1,5 @@
 ﻿using OpenCvSharp;
+using System;
 
 namespace TurkMite
 {
@@ -8,7 +9,6 @@ namespace TurkMite
         {
             Mat img = new Mat(200, 200, MatType.CV_8UC3, new Scalar(0, 0, 0));
             var turkmite = new TurkMite(img);
-            // var indexer = img.GetGenericIndexer<Vec3b>();
             for (int i = 0; i < 13000; i++)
             {
                 turkmite.Step();
@@ -33,46 +33,33 @@ namespace TurkMite
                 indexer = image.GetGenericIndexer<Vec3b>();
             }
 
+            readonly Vec3b black = new Vec3b(0, 0, 0);
+            readonly Vec3b white = new Vec3b(255, 255, 255);
+
             public void Step()
             {
                 Vec3b currentColor = indexer[y, x];
-                if (currentColor == new Vec3b(0, 0, 0))
+                if (currentColor == black)
                 {
-                    indexer[y, x] = new Vec3b(255, 255, 255);
+                    indexer[y, x] =white;
                     direction++;
                     if (direction > 3)
                         direction = 0;
                 }
                 else
                 {
-                    indexer[y, x] = new Vec3b(0, 0, 0);
+                    indexer[y, x] = black;
                     direction--;
                     if (direction < 0)
                         direction = 3;
                 }
-                switch (direction)
-                {
-                    case 0:
-                        y--;
-                        break;
-                    case 1:
-                        x++;
-                        break;
-                    case 2:
-                        y++;
-                        break;
-                    case 3:
-                        x--;
-                        break;
-                }
-                if (x < 0)
-                    x = 199;
-                if (x > 199)
-                    x = 0;
-                if (y < 0)
-                    y = 199;
-                if (y > 199)
-                    y = 0;
+
+                direction = (direction+4) % 4;
+                var delta = new (int x, int y)[] { (0, -1), (1, 0), (0, 1), (-1, 0) };
+                x += delta[direction].x;
+                y += delta[direction].y;
+                x = Math.Max(0, Math.Min(Image.Cols, x));
+                y = Math.Max(0, Math.Min(Image.Rows, y));
             }
         }
     }
