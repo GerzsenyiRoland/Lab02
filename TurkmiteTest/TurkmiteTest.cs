@@ -28,12 +28,12 @@ namespace TurkmiteTest
             }
 
             public bool GetNextColorAndUpdateDirectionInvoked = false;
+            public readonly Vec3b ReturnedColor = new Vec3b(1, 1, 1);
 
             protected override (Vec3b newColor, int deltaDirection) GetNextColorAndUpdateDirection(Vec3b currentColor)
             {
-                // Mocked to monitor invocation
                 GetNextColorAndUpdateDirectionInvoked = true;
-                return (new Vec3b(0, 0, 0), 0);
+                return (ReturnedColor,1);
             }
 
             public TestTurkmiteBase(Mat img) : base(img) { }
@@ -84,5 +84,16 @@ namespace TurkmiteTest
             AssertTurkmiteState(finalX, finalY, direction);
         }
 
+        public void StepUpdatesCorrectly()
+        {
+            turkmite.X = 5;
+            turkmite.Y = 5;
+            turkmite.D = 0;
+            turkmite.Step();
+            var indexer = turkmite.Image.GetGenericIndexer<Vec3b>();
+            var newColor = indexer[5, 5];
+            Assert.AreEqual(turkmite.ReturnedColor, newColor);
+            AssertTurkmiteState(6, 5, 1);
+        }
     }
 }
