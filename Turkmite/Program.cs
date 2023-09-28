@@ -1,59 +1,138 @@
 ﻿using OpenCvSharp;
+using System;
+using System.ComponentModel;
+using System.Net.NetworkInformation;
 
 namespace TurkMite
 {
-    class Program
+    public class Program
     {
-        static void Main()
+        static void Main(string[] args)
         {
-            Mat img = new Mat(200, 200, MatType.CV_8UC3, new Scalar(0, 0, 0));
-            var indexer = img.GetGenericIndexer<Vec3b>();
-            int x = 100;
-            int y = 100;
-            int direction = 0;  // 0 up, 1 right, 2 down, 3 left
-            for(int i=0; i<13000; i++)
+            Mat img1 = new Mat(200, 200, MatType.CV_8UC3, new Scalar(0, 0, 0));
+            Mat img2 = new Mat(200, 200, MatType.CV_8UC3, new Scalar(0, 0, 0));
+            Mat img3 = new Mat(200, 200, MatType.CV_8UC3, new Scalar(0, 0, 0));
+            var turkmite = new Program.OriginalTurkmite(img1);
+            for (int i = 0; i < turkmite.PerferredIterationCount; i++)
             {
-                Vec3b currentColor = indexer[y, x];
-                if (currentColor == new Vec3b(0,0,0))
-                {
-                    indexer[y, x] = new Vec3b(255, 255, 255);
-                    direction++;
-                    if (direction > 3)
-                        direction = 0;
-                }
-                else
-                {
-                    indexer[y, x] = new Vec3b(0, 0, 0);
-                    direction--;
-                    if (direction < 0)
-                        direction = 3;
-                }
-                switch(direction)
-                {
-                    case 0:
-                        y--;
-                        break;
-                    case 1:
-                        x++;
-                        break;
-                    case 2:
-                        y++;
-                        break;
-                    case 3:
-                        x--;
-                        break;
-                }
-                if (x < 0)
-                    x = 199;
-                if (x > 199)
-                    x = 0;
-                if (y < 0)
-                    y = 199;
-                if (y > 199)
-                    y = 0;
+                turkmite.Step();
             }
-            Cv2.ImShow("TurkMite", img);
+            var turkmit = new ThreeColorTurkmite(img2);
+            for (int i = 0; i<turkmit.PerferredIterationCount; i++)
+            {
+                turkmit.Step();
+            }
+
+            var turkmit2 = new ThreeColorTurkmiteSesond(img3);
+            for (int i = 0; i < turkmit.PerferredIterationCount; i++)
+            {
+                turkmit2.Step();
+            }
+
+            Cv2.ImShow("TurkMite1", img1);
+            Cv2.ImShow("TurkMite2", img2);
+            Cv2.ImShow("TurkMite3", img3);
             Cv2.WaitKey();
+
+        }
+
+        public class ThreeColorTurkmiteSesond : TurkmiteBase
+        {
+            private int szamlalo = 0;
+            readonly Vec3b black = new Vec3b(0, 0, 0);
+            readonly Vec3b red = new Vec3b(0, 0, 255);
+            readonly Vec3b yellow = new Vec3b(255, 255, 0);
+
+            public ThreeColorTurkmiteSesond(Mat image) : base(image) { }
+
+            public override int PerferredIterationCount => 13000;
+            protected override (Vec3b newColor, int deltaDirection) GetNextColorAndUpdateDirection(Vec3b currentColor)
+            {
+                if (currentColor == black)
+                {
+                    szamlalo++;
+                    if (szamlalo % 2 == 0)
+                        return (red, 1);
+                    else
+                        return (yellow, 1);
+                }else if (currentColor == red)
+                    return (yellow, 1);
+                return (black, -1);
+            }
+
+        }
+         public class OriginalTurkmite : TurkmiteBase
+        {
+            readonly Vec3b black = new Vec3b(0, 0, 0);
+            readonly Vec3b white = new Vec3b(255, 255, 255);
+
+            public OriginalTurkmite(Mat image) : base(image) { }
+
+            public override int PerferredIterationCount => 13000;
+
+            protected override (Vec3b newColor, int deltaDirection) GetNextColorAndUpdateDirection(Vec3b currentColor)
+            {
+                return (currentColor == black) ? (white,1) : (black,-1);
+            }
+        }
+
+        class ThreeColorTurkmite: TurkmiteBase
+        {
+            readonly private Vec3b black = new Vec3b(0,0,0);
+            readonly private Vec3b white = new Vec3b(255,255,255);
+            readonly private Vec3b red = new Vec3b(0,0,255);
+
+            public ThreeColorTurkmite(Mat image):base(image) { }
+
+            public override int PerferredIterationCount => 13000;
+
+            protected override (Vec3b newColor, int deltaDirection) GetNextColorAndUpdateDirection(Vec3b currentColor)
+            {
+                if (currentColor == black)
+                    return (white, 1);
+                else if (currentColor == white)
+                    return (red, -1);
+                else return (black, -1);
+            }
+        }
+
+        public abstract class TurkmiteBase
+        {
+            public Mat Image { get; }
+            private Mat.Indexer<Vec3b> indexer;
+            private int x;
+            private int y;
+            protected int direction;
+            protected TurkmiteBase(Mat image)
+            {
+                Image = image;
+                x = image.Cols / 2;
+                y = image.Rows / 2;
+                direction = 0;
+                indexer = image.GetGenericIndexer<Vec3b>();
+            }
+             
+            readonly private (int x,int y)[] delta = new (int x, int y)[] { (0, -1), (1, 0), (0, 1), (-1, 0) };
+
+            public void Step()
+            {
+                int deltaDirection;
+                (indexer[y, x], deltaDirection) = 
+                    GetNextColorAndUpdateDirection(indexer[y, x]);
+                PerformMove(deltaDirection);
+            }
+
+            public abstract int PerferredIterationCount { get; }
+            protected abstract (Vec3b newColor, int deltaDirection) GetNextColorAndUpdateDirection(Vec3b currentColor);
+            protected void PerformMove(int deltaDirection)
+            {
+                direction += deltaDirection;
+                direction = (direction + 4) % 4;
+                x += delta[direction].x;
+                y += delta[direction].y;
+                x = Math.Max(0, Math.Min(Image.Cols-1, x));
+                y = Math.Max(0, Math.Min(Image.Rows-1, y));
+            }
         }
     }
 }
