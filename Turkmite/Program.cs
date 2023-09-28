@@ -1,5 +1,7 @@
 ﻿using OpenCvSharp;
 using System;
+using System.ComponentModel;
+using System.Net.NetworkInformation;
 
 namespace TurkMite
 {
@@ -9,6 +11,7 @@ namespace TurkMite
         {
             Mat img1 = new Mat(200, 200, MatType.CV_8UC3, new Scalar(0, 0, 0));
             Mat img2 = new Mat(200, 200, MatType.CV_8UC3, new Scalar(0, 0, 0));
+            Mat img3 = new Mat(200, 200, MatType.CV_8UC3, new Scalar(0, 0, 0));
             var turkmite = new Program.OriginalTurkmite(img1);
             for (int i = 0; i < turkmite.PerferredIterationCount; i++)
             {
@@ -20,12 +23,44 @@ namespace TurkMite
                 turkmit.Step();
             }
 
+            var turkmit2 = new ThreeColorTurkmiteSesond(img3);
+            for (int i = 0; i < turkmit.PerferredIterationCount; i++)
+            {
+                turkmit2.Step();
+            }
+
             Cv2.ImShow("TurkMite1", img1);
             Cv2.ImShow("TurkMite2", img2);
+            Cv2.ImShow("TurkMite3", img3);
             Cv2.WaitKey();
 
         }
 
+        public class ThreeColorTurkmiteSesond : TurkmiteBase
+        {
+            private int szamlalo = 0;
+            readonly Vec3b black = new Vec3b(0, 0, 0);
+            readonly Vec3b red = new Vec3b(0, 0, 255);
+            readonly Vec3b yellow = new Vec3b(255, 255, 0);
+
+            public ThreeColorTurkmiteSesond(Mat image) : base(image) { }
+
+            public override int PerferredIterationCount => 13000;
+            protected override (Vec3b newColor, int deltaDirection) GetNextColorAndUpdateDirection(Vec3b currentColor)
+            {
+                if (currentColor == black)
+                {
+                    szamlalo++;
+                    if (szamlalo % 2 == 0)
+                        return (red, 1);
+                    else
+                        return (yellow, 1);
+                }else if (currentColor == red)
+                    return (yellow, 1);
+                return (black, -1);
+            }
+
+        }
          public class OriginalTurkmite : TurkmiteBase
         {
             readonly Vec3b black = new Vec3b(0, 0, 0);
@@ -41,7 +76,7 @@ namespace TurkMite
             }
         }
 
-        class ThreeColorTurkmite : TurkmiteBase
+        class ThreeColorTurkmite: TurkmiteBase
         {
             readonly private Vec3b black = new Vec3b(0,0,0);
             readonly private Vec3b white = new Vec3b(255,255,255);
