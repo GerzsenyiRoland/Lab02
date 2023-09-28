@@ -1,16 +1,15 @@
 ﻿using OpenCvSharp;
 using System;
-using System.ComponentModel;
 
 namespace TurkMite
 {
-    class Program
+    public class Program
     {
         static void Main(string[] args)
         {
             Mat img1 = new Mat(200, 200, MatType.CV_8UC3, new Scalar(0, 0, 0));
             Mat img2 = new Mat(200, 200, MatType.CV_8UC3, new Scalar(0, 0, 0));
-            var turkmite = new OriginalTurkmite(img1);
+            var turkmite = new Program.OriginalTurkmite(img1);
             for (int i = 0; i < turkmite.PerferredIterationCount; i++)
             {
                 turkmite.Step();
@@ -27,7 +26,7 @@ namespace TurkMite
 
         }
 
-        class OriginalTurkmite : TurkmiteBase
+         public class OriginalTurkmite : TurkmiteBase
         {
             readonly Vec3b black = new Vec3b(0, 0, 0);
             readonly Vec3b white = new Vec3b(255, 255, 255);
@@ -62,14 +61,14 @@ namespace TurkMite
             }
         }
 
-        abstract class TurkmiteBase
+        public abstract class TurkmiteBase
         {
             public Mat Image { get; }
             private int x;
             private int y;
             protected int direction;
             private Mat.Indexer<Vec3b> indexer;
-            public TurkmiteBase(Mat image)
+            protected TurkmiteBase(Mat image)
             {
                 Image = image;
                 x = image.Cols / 2;
